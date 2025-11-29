@@ -1,0 +1,5 @@
+{
+  "name": "Sentinel - Supply Chain Security",
+  "description": "An AI-powered dashboard for detecting malicious software dependencies using static and dynamic analysis simulation.",
+  "requestFramePermissions": []
+}
