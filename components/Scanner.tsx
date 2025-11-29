@@ -1,3 +1,4 @@
+
 import React, { useState, useContext } from 'react';
 import { Search, Loader2, AlertOctagon, CheckCircle2, AlertTriangle, FileCode, Network, Terminal, Shield, Zap, X, FileText, Check, Info } from 'lucide-react';
 import { analyzePackage } from '../services/geminiService';
@@ -47,6 +48,26 @@ const Scanner: React.FC = () => {
       setScanStage('idle');
       setResult(null);
       setReportSaved(false);
+  };
+
+  const getPrimaryVector = (result: AnalysisResult): string => {
+    if (result.typosquattingTarget) return "Typosquatting & Impersonation";
+    
+    const hasNetwork = result.dynamicAnalysis.networkActivity.length > 0;
+    const hasProcess = result.dynamicAnalysis.processSpawning.length > 0;
+    const hasFiles = result.dynamicAnalysis.fileSystemAccess.length > 0;
+    const hasStatic = result.staticAnalysis.findings.length > 0;
+    const hasSuspiciousFiles = result.staticAnalysis.suspiciousFiles.length > 0;
+  
+    if (hasNetwork && hasProcess) return "C2 Communication & Remote Execution";
+    if (hasNetwork && hasFiles) return "Data Exfiltration & Spyware";
+    if (hasNetwork) return "Network Exfiltration";
+    if (hasProcess) return "Unauthorized System Commands";
+    if (hasSuspiciousFiles) return "Malicious Payload Delivery";
+    if (hasStatic) return "Code Obfuscation & Static Anomalies";
+    
+    if (result.riskScore > 50) return "Heuristic Behavioral Anomalies";
+    return "None Detected";
   };
 
   return (
@@ -194,7 +215,7 @@ const Scanner: React.FC = () => {
                                 content={({ active }) => {
                                     if (active) {
                                         return (
-                                            <div className="bg-white border border-slate-200 p-3 rounded-lg shadow-xl text-xs">
+                                            <div className="bg-white border border-slate-200 p-3 rounded-lg shadow-xl text-xs z-50">
                                                 <p className="font-bold text-slate-900 mb-2">Score Composition</p>
                                                 <div className="flex justify-between gap-4 text-slate-500">
                                                     <span>Static Analysis:</span>
@@ -233,9 +254,25 @@ const Scanner: React.FC = () => {
                     )}
                 </div>
 
-                <p className="text-slate-600 text-lg leading-relaxed">
-                    {result.summary}
-                </p>
+                <div className="space-y-4">
+                    <p className="text-slate-600 text-lg leading-relaxed">
+                        {result.summary}
+                    </p>
+                    
+                    {result.riskLevel !== 'Low' && (
+                        <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 flex items-start gap-3">
+                            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                            <div>
+                                <p className="text-sm font-bold text-amber-800 uppercase tracking-wide mb-1">
+                                    Primary Threat Vector: {getPrimaryVector(result)}
+                                </p>
+                                <p className="text-sm text-amber-700/90 leading-relaxed">
+                                    {result.threatImpact || "Detailed forensic analysis indicates potentially malicious behavior patterns consistent with supply chain attacks."}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {/* Breakdown Visualization */}
                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
